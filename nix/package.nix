@@ -89,7 +89,7 @@ in
     meta = {
       description = "Soothing pastel mouse cursors";
       homepage = "https://github.com/catppuccin/cursors";
-      license = lib.licenses.gpl2;
+      license = lib.licenses.gpl3Plus;
       maintainers = with lib.maintainers; [NotAShelf];
       platforms = lib.platforms.linux;
     };
