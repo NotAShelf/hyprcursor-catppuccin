@@ -47,16 +47,6 @@ in
 
       mkdir -p $out
 
-      # unzip all cursor zipfiles
-      local extracted=$(mktemp -d)
-
-      directory="$src/cursors"
-      for zipfile in "$directory"/*.zip; do
-        unzip -q "$zipfile" -d "$extracted"
-      done
-
-      ls -lah "$extracted"
-
       for output in $(getAllOutputNames); do
         if [ "$output" != "out" ]; then
           local outputDir="''${!output}"
@@ -65,6 +55,13 @@ in
           local variant=$(sed 's/\([A-Z]\)/-\1/g' <<< "$output")
           local variant=''${variant^}
           local name="Catppuccin-$variant-Cursors"
+
+          # unzip all cursor zipfiles
+          local extracted=$(mktemp -d)
+
+          # extract desired cursor theme
+          unzip -q "$src"/cursors/"$name".zip -d "$extracted"
+
 
           # extract xcursor files from extracted cursor artifacts
           hyprcursor-util --extract "$extracted"/"$name" --output "$out"
@@ -82,7 +79,7 @@ in
           mkdir -p "$iconsDir"
 
           hyprcursor-util --create "$out"/cursors --output "$out"
-          mv "$out"/theme_"$name" "$iconsDir"/"$name"
+          mv "$out"/theme_"$name" "$outputDir"
         fi
       done
 
