@@ -75,9 +75,6 @@ in
           cursors_directory = hyprcursors
           " > "$out"/cursors/manifest.hl
 
-          local iconsDir="$outputDir"/share/icons
-          mkdir -p "$iconsDir"
-
           hyprcursor-util --create "$out"/cursors --output "$out"
           mv "$out"/theme_"$name" "$outputDir"
         fi
