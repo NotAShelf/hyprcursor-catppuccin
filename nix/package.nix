@@ -20,22 +20,21 @@
     (lib.strings.toLower palette) + color;
   variants = map variantName product;
 
-  catppuccin-cursor-src = fetchFromGitHub {
-    owner = "catppuccin";
-    repo = "cursors";
-    rev = "ref/tags/0.2.0";
-    sha256 = "sha256-TgV5f8+YWR+h61m6WiBMg3aBFnhqShocZBdzZHSyU2c=";
-    sparseCheckout = ["cursors"];
+  name = "hyprcursor-catppuccin";
+  version = "0.2.0";
+  src = builtins.path {
+    name = "hyrcursor-catppuccin";
+    path = fetchFromGitHub {
+      owner = "catppuccin";
+      repo = "cursors";
+      rev = "refs/tags/v0.2.0";
+      sha256 = "sha256-TgV5f8+YWR+h61m6WiBMg3aBFnhqShocZBdzZHSyU2c=";
+      sparseCheckout = ["cursors"]; # zipped cursors
+    };
   };
 in
   stdenvNoCC.mkDerivation {
-    pname = "hyprcursor-catppuccin";
-    version = "0.2.0";
-
-    src = builtins.path {
-      path = catppuccin-cursor-src;
-      name = "hyrcursor-catppuccin";
-    };
+    inherit name version src;
 
     outputs = variants ++ ["out"];
     outputsToInstall = [];
@@ -46,45 +45,49 @@ in
     installPhase = ''
       runHook preInstall
 
-      echo "Extracting Catppuccin cursors..."
-      mkdir -p $out/{extracted,hyprcursor}
-
+      mkdir -p $out
 
       # unzip all cursor zipfiles
+      local extracted=$(mktemp -d)
+
       directory="$src/cursors"
       for zipfile in "$directory"/*.zip; do
-        unzip -q "$zipfile" -d "$out/extracted"
+        unzip -q "$zipfile" -d "$extracted"
       done
+
+      ls -lah "$extracted"
 
       for output in $(getAllOutputNames); do
         if [ "$output" != "out" ]; then
           local outputDir="''${!output}"
-          local iconsDir="$outputDir"/share/icons
-
-          mkdir -p "$iconsDir"
 
           # Convert to kebab case with the first letter of each word capitalized
           local variant=$(sed 's/\([A-Z]\)/-\1/g' <<< "$output")
           local variant=''${variant^}
           local name="Catppuccin-$variant-Cursors"
 
-          # convert xcursor to hyprcursor format
-          hyprcursor-util --extract "$out/extracted/$name" --output "$out/hyprcursor";
+          # extract xcursor files from extracted cursor artifacts
+          hyprcursor-util --extract "$extracted"/"$name" --output "$out"
+          mv "$out"/extracted_"$name" "$out"/cursors
 
-          # sanitize extracted cursor directory names
-          rename 's/^extracted_//' "$out/hyprcursor/extracted_*"
-          echo "Finished extracting Catppuccin cursors."
+          # generate Hyprcursor theme
+          echo -en "
+          name = $name
+          description = Catppuccin Cursors for Hyprcursor
+          version = ${version}
+          cursors_directory = hyprcursors
+          " > "$out"/cursors/manifest.hl
 
-          # move extracted cursor artifact to the icon dir
-          # it'll be located in extracted-cursors/extracted
-          cp -rv "$out/hyprcursor/extracted_$name" "$iconsDir/$name"
+          local iconsDir="$outputDir"/share/icons
+          mkdir -p "$iconsDir"
+
+          hyprcursor-util --create "$out"/cursors --output "$out"
+          mv "$out"/theme_"$name" "$iconsDir"/"$name"
         fi
       done
 
       runHook postInstall
     '';
-
-    # TODO: in fixupPhase, patch manifest to properly define name, description and version
 
     meta = {
       description = "Soothing pastel mouse cursors";
