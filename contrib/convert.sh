@@ -7,6 +7,79 @@ current_dir=$(pwd)
 # the build process
 tmpdir=$(mktemp -d)
 cursor_path="$tmpdir"/cursors
+
+palette=("Frappe" "Latte" "Macchiato" "Mocha")
+color=("Blue" "Dark" "Flamingo" "Green" "Lavender" "Light" "Maroon" "Mauve" "Peach" "Pink" "Red" "Rosewater" "Sapphire" "Sky" "Teal" "Yellow")
+
+VARIANT="Mocha-Dark"
+NAMED="hyprcursor"
+ANIMRATE="50"
+CURSORDIR="$cursor_path"
+ANIMONE="wait"
+ANIMTWO="progress"
+
+helpme() {
+	echo "Usage: $0 [-v variant] [-n name] [-r rate] [-d dir] [-a anim-one] [-b anim-two]"
+	echo ""
+	echo "     Hyprcursor-Catppuccin"
+	echo "           /ᐠ 、    "
+	echo '        ミ(˚. 。*フ '
+	echo '          |   ˜〵   '
+	echo '          しし._)ノ '
+	echo ""
+	echo "  -v Set the variant (default: Mocha-Dark)"
+	echo "  -n Theme name (default: hyprcursor)"
+	echo "  -r Animation rate (default: 50)"
+	echo "  -d Set cursor directory (recommend not touching this)"
+	echo "  -a 1st animation (default: wait)"
+	echo "  -b 2nd animation (default: progress)"
+	exit 1
+}
+
+while getopts ":v:n:r:d:a:b:h" opt; do
+	case ${opt} in
+	v)
+		VARIANT="$OPTARG"
+		;;
+	n)
+		NAMED="$OPTARG"
+		;;
+	r)
+		ANIMRATE="$OPTARG"
+		;;
+	d)
+		CURSORDIR="$OPTARG"
+		;;
+	a)
+		ANIMONE="$OPTARG"
+		;;
+	b)
+		ANIMTWO="$OPTARG"
+		;;
+	h)
+		helpme
+		;;
+	\?)
+		echo "Invalid option: $OPTARG" 1>&2
+		exit 1
+		;;
+	:)
+		echo "Option -$OPTARG requires an argument." 1>&2
+		exit 1
+		;;
+	esac
+done
+shift $((OPTIND - 1))
+
+if ! [[ "$ANIMRATE" =~ ^[0-9]+$ ]]; then
+	echo -e "\e[31mError: ANIMRATE argument is missing or not an integer. Defaulting to 50.\e[0m" >&2
+	ANIMRATE="50"
+fi
+
+print_green() {
+	echo -e "\e[32m$1\e[0m"
+}
+
 echo -en "Building in temporary directory: $tmpdir\n"
 
 # Sparsely check out to the repository
@@ -19,12 +92,6 @@ git sparse-checkout init --cone
 git sparse-checkout set src/
 echo -en "Cloned repository at $tmpdir/cursors\n"
 
-VARIANT="${1:-"Mocha-Dark"}"
-NAMED="${2:-hyprcursor}"
-CURSORDIR="${3:-"$cursor_path"}" # should generally be cursors/src but user may choose to cd themselves
-ANIMONE="${4:-"wait"}"
-ANIMTWO="${5:-"progress"}"
-
 if [ ! -d "$CURSORDIR" ]; then
 	echo "Error: Directory '$CURSORDIR' does not exist."
 	exit 1
@@ -34,9 +101,6 @@ if [ -f "$CURSORDIR/manifest.hl" ]; then
 	echo "Error: $CURSORDIR already has a manifest.hl file."
 	exit 1
 fi
-
-palette=("Frappe" "Latte" "Macchiato" "Mocha")
-color=("Blue" "Dark" "Flamingo" "Green" "Lavender" "Light" "Maroon" "Mauve" "Peach" "Pink" "Red" "Rosewater" "Sapphire" "Sky" "Teal" "Yellow")
 
 result_array=() # initialize results array
 
@@ -53,6 +117,8 @@ if [[ "${result_array[@]}" =~ "${VARIANT}" ]]; then
 
 else
 	echo "Invalid variant provided: $VARIANT"
+	echo "Valid palettes: ${palette[*]}" >&2
+	echo "Valid colors: ${color[*]}" >&2
 	exit 1
 fi
 
@@ -84,7 +150,7 @@ function process_meta() {
 	local ANIM="$1"
 	local output=""
 	for i in {1..12}; do
-		output+="define_size = 64, $ANIM-$(printf "%02d" "$i").svg,500\n"
+		output+="define_size = 64, $ANIM-$(printf "%02d" "$i").svg,$ANIMRATE\n"
 	done
 
 	echo -e "resize_algorithm = bilinear\n$output" >"$ANIM"/meta.hl
