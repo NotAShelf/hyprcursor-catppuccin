@@ -1,29 +1,58 @@
-name: Build Hyprcursor Artifacts
+name: Generate Build Matrix and Upload Zips
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
 
 jobs:
-  generate-matrix:
+  build_and_upload:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Install Nix and set up cache
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - name: Build with Nix
-        id: nix-build
-        shell: bash
+      - name: Generate matrix
+        id: generate-matrix
         run: |
+          matrix=$(bash -c '
+          # Define the lists
           palette=("Frappe" "Latte" "Macchiato" "Mocha")
           color=("Blue" "Dark" "Flamingo" "Green" "Lavender" "Light" "Maroon" "Mauve" "Peach" "Pink" "Red" "Rosewater" "Sapphire" "Sky" "Teal" "Yellow")
 
           for item in "${palette[@]}"; do
-            for col in "${color[@]}"; do
-              nix build .#"${item}${col}" -Lv
-            done
+              for col in "${color[@]}"; do
+                  echo "${item}${col}"
+              done
           done
+          ')
+
+          # Convert the output to a JSON array
+          matrix_json=$(echo "$matrix" | jq -R . | jq -s .)
+
+          # Output the matrix
+          echo "::set-output name=matrix::$matrix_json"
+
+      - name: Build with Nix and Zip
+        run: |
+          matrix="${{ steps.generate-matrix.outputs.matrix }}"
+          for element in $matrix; do
+            nix build .#$element
+            mkdir -p zips
+            cp -r ./result-$element/* zips/
+            zip -r $element.zip zips/
+            rm -rf zips
+          done
+
+      - name: Upload Zips to Releases
+        uses: actions/upload-release-asset@v4
+        with:
+          asset_path: ./*.zip
+          asset_name: ${{ matrix.palette_color }}.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
