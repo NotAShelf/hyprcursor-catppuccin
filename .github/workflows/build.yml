@@ -1,0 +1,29 @@
+name: Build Hyprcursor Artifacts
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build with Nix
+        id: nix-build
+        shell: bash
+        run: |
+          palette=("Frappe" "Latte" "Macchiato" "Mocha")
+          color=("Blue" "Dark" "Flamingo" "Green" "Lavender" "Light" "Maroon" "Mauve" "Peach" "Pink" "Red" "Rosewater" "Sapphire" "Sky" "Teal" "Yellow")
+
+          for item in "${palette[@]}"; do
+            for col in "${color[@]}"; do
+              nix build .#"${item}${col}" -Lv
+            done
+          done
