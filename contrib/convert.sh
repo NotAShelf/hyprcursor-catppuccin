@@ -21,9 +21,9 @@ echo -en "Cloned repository at $tmpdir/cursors\n"
 
 CURSORDIR="${1-"$cursor_path"}" # should generally be cursors/src but user may choose to cd themselves
 VARIANT="${2:-"Mocha-Dark"}"
-NAMED="${2:-hyprcursor}"
-ANIMONE="${3:-"wait"}"
-ANIMTWO="${4:-"progress"}"
+NAMED="${3:-hyprcursor}"
+ANIMONE="${4:-"wait"}"
+ANIMTWO="${5:-"progress"}"
 
 if [ ! -d "$CURSORDIR" ]; then
 	echo "Error: Directory '$CURSORDIR' does not exist."
