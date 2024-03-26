@@ -19,8 +19,8 @@ git sparse-checkout init --cone
 git sparse-checkout set src/
 echo -en "Cloned repository at $tmpdir/cursors\n"
 
-CURSORDIR="${1-"$cursor_path"}" # should generally be cursors/src but user may choose to cd themselves
-VARIANT="${2:-"Mocha-Dark"}"
+VARIANT="${1:-"Mocha-Dark"}"
+CURSORDIR="${2:-"$cursor_path"}" # should generally be cursors/src but user may choose to cd themselves
 NAMED="${3:-hyprcursor}"
 ANIMONE="${4:-"wait"}"
 ANIMTWO="${5:-"progress"}"
@@ -95,7 +95,7 @@ process_meta "$ANIMONE"
 process_meta "$ANIMTWO"
 
 mv !("$NAMED") ./"$NAMED"
-rm $NAMED/index.theme
+rm "$NAMED"/index.theme
 
 # index.theme gen
 echo "[Icon Theme]
@@ -112,4 +112,4 @@ cursors_directory = $NAMED
 hyprcursor-util --create .
 echo -en "finished making cursor, copying to current directory"
 
-cp -r ../theme_$NAMED $current_dir/$NAMED
+cp -r ../theme_"$NAMED" "$current_dir"/"$NAMED"
