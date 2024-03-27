@@ -18,14 +18,16 @@ CURSORDIR="$cursor_path"
 ANIMONE="wait"
 ANIMTWO="progress"
 
+print_green() {
+	echo -en "\e[32m$1\e[0m"
+}
+
 helpme() {
-	echo "Usage: $0 [-v variant] [-n name] [-r rate] [-d dir] [-a anim-one] [-b anim-two]"
-	echo ""
-	echo "     Hyprcursor-Catppuccin"
-	echo "           /ᐠ 、    "
-	echo '        ミ(˚. 。*フ '
-	echo '          |   ˜〵   '
-	echo '          しし._)ノ '
+	print_green "Usage: $0 [-v variant] [-n name] [-r rate] [-d dir] [-a anim-one] [-b anim-two]\n"
+	echo '                /ᐠ 、     '
+	echo '             ミ(˚. 。*フ  '
+	echo '               |   ˜〵    '
+	echo '               しし._)ノ  '
 	echo ""
 	echo "  -v Set the variant (default: Mocha-Dark)"
 	echo "  -n Theme name (default: hyprcursor)"
@@ -72,34 +74,8 @@ done
 shift $((OPTIND - 1))
 
 if ! [[ "$ANIMRATE" =~ ^[0-9]+$ ]]; then
-	echo -e "\e[31mError: ANIMRATE argument is missing or not an integer. Defaulting to 50.\e[0m" >&2
+	print_green "\e[31mError: ANIMRATE argument is missing or not an integer. Defaulting to 50.\e[0m\n" >&2
 	ANIMRATE="50"
-fi
-
-print_green() {
-	echo -e "\e[32m$1\e[0m"
-}
-
-echo -en "Building in temporary directory: $tmpdir\n"
-
-# Sparsely check out to the repository
-# specifically to the src/ directory where
-# vector (svg) versions of the Catppuccin cursors
-# are located
-git clone --depth=1 --filter=blob:none --sparse https://github.com/catppuccin/cursors "$cursor_path"
-cd "$cursor_path" || exit
-git sparse-checkout init --cone
-git sparse-checkout set src/
-echo -en "Cloned repository at $tmpdir/cursors\n"
-
-if [ ! -d "$CURSORDIR" ]; then
-	echo "Error: Directory '$CURSORDIR' does not exist."
-	exit 1
-fi
-
-if [ -f "$CURSORDIR/manifest.hl" ]; then
-	echo "Error: $CURSORDIR already has a manifest.hl file."
-	exit 1
 fi
 
 result_array=() # initialize results array
@@ -112,17 +88,42 @@ for item in "${palette[@]}"; do
 done
 
 # Check if the string is an element of the result array
-if [[ "${result_array[@]}" =~ "${VARIANT}" ]]; then
-	true
+VARIANT_MATCH=false
+for valid_variant in "${result_array[@]}"; do
+	if [[ "${valid_variant,,}" == "${VARIANT,,}" ]]; then
+		VARIANT_MATCH=true
+		break
+	fi
+done
 
-else
-	echo "Invalid variant provided: $VARIANT"
-	echo "Valid palettes: ${palette[*]}" >&2
-	echo "Valid colors: ${color[*]}" >&2
+if ! $VARIANT_MATCH; then
+	print_green "Invalid variant provided: $VARIANT\n"
+	print_green "Valid palettes: ${palette[*]}\n" >&2
+	print_green "Valid colors: ${color[*]}\n" >&2
 	exit 1
 fi
 
-# if variant is not in the list, exit
+# Sparsely check out to the repository
+# specifically to the src/ directory where
+# vector (svg) versions of the Catppuccin cursors
+# are located
+git clone --depth=1 --filter=blob:none --sparse https://github.com/catppuccin/cursors "$cursor_path"
+cd "$cursor_path" || exit
+git sparse-checkout init --cone
+git sparse-checkout set src/
+
+print_green "Cloned repository at $tmpdir/cursors\n"
+print_green "Building in temporary directory: $tmpdir\n"
+
+if [ ! -d "$CURSORDIR" ]; then
+	echo "Error: Directory '$CURSORDIR' does not exist."
+	exit 1
+fi
+
+if [ -f "$CURSORDIR/manifest.hl" ]; then
+	print_green "Error: $CURSORDIR already has a manifest.hl file.\n"
+	exit 1
+fi
 
 # prepare directory, remove any extraneous files
 
@@ -156,7 +157,7 @@ function process_meta() {
 	echo -e "resize_algorithm = bilinear\n$output" >"$ANIM"/meta.hl
 }
 
-echo -en "Step 3: Processing meta files\n"
+print_green "Step 3: Processing meta files\n"
 process_meta "$ANIMONE"
 process_meta "$ANIMTWO"
 
@@ -176,6 +177,6 @@ cursors_directory = cursors
 " >>manifest.hl
 
 hyprcursor-util --create .
-echo -en "finished making $NAMED, copying to $current_dir"
+print_green "Finished making $NAMED...\nCopying to $current_dir\n"
 
 cp -r ../theme_"$NAMED" "$current_dir"/"$NAMED"
