@@ -64,8 +64,9 @@ in
 
 
           # extract xcursor files from extracted cursor artifacts
-          hyprcursor-util --extract "$extracted"/"$name" --output "$out"
-          mv "$out"/extracted_"$name" "$out"/cursors
+          local build=$(mktemp -d)
+          hyprcursor-util --extract "$extracted"/"$name" --output "$build"
+          mv "$build"/extracted_"$name" "$build"/cursors
 
           # generate Hyprcursor theme
           echo -en "
@@ -73,10 +74,10 @@ in
           description = Catppuccin Cursors for Hyprcursor
           version = ${version}
           cursors_directory = hyprcursors
-          " > "$out"/cursors/manifest.hl
+          " > "$build"/cursors/manifest.hl
 
-          hyprcursor-util --create "$out"/cursors --output "$out"
-          mv "$out"/theme_"$name" "$outputDir"
+          hyprcursor-util --create "$build"/cursors --output "$build"
+          mv "$build"/theme_"$name" "$outputDir"
         fi
       done
 
